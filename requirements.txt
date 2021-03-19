@@ -4,5 +4,4 @@ azure-functions
 pandas
 azure-storage-blob
 azure-storage-queue
-xlrd
 openpyxl
