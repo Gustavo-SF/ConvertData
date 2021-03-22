@@ -2,6 +2,7 @@ import logging
 import pandas as pd
 from azure.storage.blob import BlobClient, ContainerClient
 import io
+from .singlefile_processing import *
       
       
 def process_txtfile(msg, conn_string, container): 
@@ -32,10 +33,6 @@ def process_txtfile(msg, conn_string, container):
                 if len(row) == col_len:
                     if  row[split_indices[-2]]=='|':
                         list_to_append = [row[i+1:j].strip() for i,j in zip(split_indices[:-1], split_indices[1:None])]
-                        # logging.info('The Row:')
-                        # logging.info(row)
-                        # logging.info("List to Append:")
-                        # logging.info(list_to_append)
                         df_list.append((list_to_append))
 
     df = pd.DataFrame(df_list)
@@ -44,6 +41,16 @@ def process_txtfile(msg, conn_string, container):
     # Remove the repeated rows with the column names
     df = df[df[df.columns[1]]!=df.columns[1]]
 
+    if msg=='MB52':
+        df = prepare_mb52(df)
+    elif msg=='MB51':
+        df = prepare_mb51(df)
+    elif msg=='MB51-MEP':
+        df = prepare_mb51mep(df)
+    elif msg=='ZMM001':
+        df = prepare_zmm001(df)
+    elif msg=='ZMB25':
+        df = prepare_zmb25(df)
     # output
     outcsv = df.to_csv(index=False)
     
@@ -54,6 +61,9 @@ def process_xlsxfile(msg, conn_string, container):
     logging.info(f"Starting to process file {msg}...")
     blob = BlobClient.from_connection_string(conn_str=conn_string, container_name=container, blob_name=f"{msg}.XLSX")
     df = pd.read_excel(blob.download_blob().content_as_bytes())
+
+    if msg=='ZFI':
+        df = prepare_zfi(df)
     
     outcsv = df.to_csv(index=False)
 
@@ -67,11 +77,19 @@ def join_xlsx(msg, conn_string, container, subdir):
 
     final_df = pd.DataFrame()
 
-    for blob in blobs_ls:
+    for i, blob in enumerate(blobs_ls):
         blob = BlobClient.from_connection_string(conn_str=conn_string, container_name=container, blob_name=blob.name)
         df = pd.read_excel(blob.download_blob().content_as_bytes())
+        if i==0:
+            cols = df.columns
+        else:
+            df.columns = cols
         final_df = pd.concat([final_df, df])
     
-    outcsv = final_df.to_csv(index=False)
+    if msg=='MCBA':
+        final_df = prepare_mcba(final_df)
+    elif msg=='ZMRP':
+        final_df = prepare_mrp(final_df)
 
+    outcsv = final_df.to_csv(index=False)
     return outcsv
