@@ -14,14 +14,15 @@ def main(msg: func.QueueMessage, output: func.Out[func.InputStream]):
     connection_string = os.getenv("AzureWebJobsStorage")
     containerName = "raw-data"
 
-    txt_to_csv = ['MB51', 'MB52', 'ZMB25', 'ZMM001', "MB51-MEP"]
+    txt_to_csv = ['MB51', 'MB52', 'ZMB25', 'ZMM001', 'MB51-MEP']
     join_list_xlsx = ['ZMRP', 'MCBA']
     xlsx_to_csv = ['ZFI']
+    extra_txt = ['ZMM001-Extra']
 
     if message == "all":
         for new_msg in txt_to_csv+join_list_xlsx+xlsx_to_csv:
             send_message(new_msg, connection_string, "uploadedfiles")
-    elif message in txt_to_csv:
+    elif message in txt_to_csv+extra_txt:
         outcsv = process_txtfile(message, connection_string, containerName)
         output.set(outcsv)
         logging.info(f"Success creating {message}.csv!")

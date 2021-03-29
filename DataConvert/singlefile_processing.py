@@ -13,8 +13,9 @@ def prepare_mb51(df):
     df[cols] = df[cols].applymap(fix_values)
     df['Entry Date'] = df['Entry Date'].str.replace('.', '/', regex=False)
     df['Req. Date'] = df['Req. Date'].str.replace('.', '/', regex=False)
-    df = df.drop(columns=['Plnt'])
-    return df
+    df['Id'] = ''
+    final_cols = ['Id', 'Plnt', 'SLoc', 'Material', 'Quantity', 'MvT', 'User Name', 'Entry Date', 'Req. Date', 'Amount in LC', 'Reserv.no.']
+    return df[final_cols]
 
 
 def prepare_mb51mep(df):
@@ -29,7 +30,8 @@ def prepare_mb51mep(df):
     df[cols] = df[cols].applymap(fix_values)
     df['Entry Date'] = df['Entry Date'].str.replace('.', '/', regex=False)
     df['Req. Date'] = df['Req. Date'].str.replace('.', '/', regex=False)
-    final_cols = ['SLoc', 'Material', 'Quantity', 'MvT', 'User name', 'Entry Date', 'Req. Date', 'Amount in LC', 'Reserv.No.']
+    df['Id'] = ''
+    final_cols = ['Id', 'Plnt', 'SLoc', 'Material', 'Quantity', 'MvT', 'User name', 'Entry Date', 'Req. Date', 'Amount in LC', 'Reserv.No.']
     return df[final_cols]
 
 
@@ -85,6 +87,8 @@ def prepare_zmm001(df):
     for col in cols:
         df[col] = df[col].str.replace('.', '/', regex=False)
     df = df.drop(columns=['ValA'])
+    # 40319421 & 403119420 needed this
+    df.loc[df['Last Chg']=='00/00/0000', 'Last Chg'] = '31/01/2020'
     df['Last Chg'] = pd.to_datetime(df['Last Chg'])
     df = df.sort_values('Last Chg').drop_duplicates('Material',keep='first')
     return df
@@ -92,12 +96,14 @@ def prepare_zmm001(df):
 
 def prepare_mcba(df):
     logging.info("Starting to process MCBA")
+    df = df[df['Matl type']=='ZMAT' | df['Matl type']=='ZPEC']
     final_cols = ['Plant', 'Material', 'Stor. loc.', 'MRP Type', 'Month', 'Val.stk(I)', 'Val.stk(R)', 'Val. stock', 'ValStckVal', 'VlStkRcVal', 'VlStkIssVl']
     df = df[final_cols]
     df = df[df['Material'].notna()]
     df['Stor. loc.'] = df['Stor. loc.'].astype(str).apply(lambda x: x.split('.0')[0])
     df['Plant'] = df['Plant'].astype(str).apply(lambda x: x.split('.0')[0])
     df['Month'] = df['Month'].astype(str).apply(lambda x: "01/"+x.split('.')[0]+"/"+x.split('.')[1] if int(x.split('.')[1]) > 202 else "01/"+x.split('.')[0]+"/2020")
+    df.loc[df['Material'].isna(), 'Material'] = ''
     return df
 
 

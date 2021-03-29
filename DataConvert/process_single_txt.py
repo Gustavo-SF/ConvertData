@@ -17,7 +17,8 @@ def process_txtfile(msg, conn_string, container):
         "MB51": 21,
         "ZMM001": 14,
         "ZMB25": 24,
-        "MB51-MEP": 26,
+        "MB51-MEP": 21,
+        "ZMM001-Extra": 14,
     }
 
     df_list = []
@@ -47,7 +48,7 @@ def process_txtfile(msg, conn_string, container):
         df = prepare_mb51(df)
     elif msg=='MB51-MEP':
         df = prepare_mb51mep(df)
-    elif msg=='ZMM001':
+    elif msg=='ZMM001' or msg=='ZMM001-Extra':
         df = prepare_zmm001(df)
     elif msg=='ZMB25':
         df = prepare_zmb25(df)
