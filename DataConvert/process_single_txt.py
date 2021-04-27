@@ -24,7 +24,7 @@ def process_txtfile(msg, conn_string, container):
     df_list = []
     with io.BytesIO(blobStream) as txt:
         for i, row in enumerate(txt):
-            row = row.decode('iso-8859-1')
+            row = row.decode('cp1252') #ISO-8859-1 was here before 
             if i == starts[msg]:
                 col_len = len(row)
                 cols = row.split("|")
@@ -53,7 +53,7 @@ def process_txtfile(msg, conn_string, container):
     elif msg=='ZMB25':
         df = prepare_zmb25(df)
     # output
-    outcsv = df.to_csv(index=False)
+    outcsv = df.to_csv(index=False, encoding='utf-8')
     
     return outcsv
 
@@ -66,7 +66,7 @@ def process_xlsxfile(msg, conn_string, container):
     if msg=='ZFI':
         df = prepare_zfi(df)
     
-    outcsv = df.to_csv(index=False)
+    outcsv = df.to_csv(index=False, encoding='utf-8')
 
     return outcsv
 
@@ -92,5 +92,5 @@ def join_xlsx(msg, conn_string, container, subdir):
     elif msg=='ZMRP':
         final_df = prepare_mrp(final_df)
 
-    outcsv = final_df.to_csv(index=False)
+    outcsv = final_df.to_csv(index=False, encoding='utf-8')
     return outcsv
