@@ -14,7 +14,8 @@ def prepare_mb51(df):
     df['Entry Date'] = df['Entry Date'].str.replace('.', '/', regex=False)
     df['Req. Date'] = df['Req. Date'].str.replace('.', '/', regex=False)
     df['Id'] = ''
-    final_cols = ['Id', 'Plnt', 'SLoc', 'Material', 'Quantity', 'MvT', 'User Name', 'Entry Date', 'Req. Date', 'Amount in LC', 'Reserv.no.']
+    df['User Name'] = df['User Name'].astype('category').cat.codes
+    final_cols = ['Id', 'Plnt', 'SLoc', 'Material', 'Quantity', 'MvT', 'Entry Date', 'Req. Date', 'Amount in LC', 'Reserv.no.']
     return df[final_cols]
 
 
@@ -31,7 +32,7 @@ def prepare_mb51mep(df):
     df['Entry Date'] = df['Entry Date'].str.replace('.', '/', regex=False)
     df['Req. Date'] = df['Req. Date'].str.replace('.', '/', regex=False)
     df['Id'] = ''
-    final_cols = ['Id', 'Plnt', 'SLoc', 'Material', 'Quantity', 'MvT', 'User name', 'Entry Date', 'Req. Date', 'Amount in LC', 'Reserv.No.']
+    final_cols = ['Id', 'Plnt', 'SLoc', 'Material', 'Quantity', 'MvT', 'Entry Date', 'Req. Date', 'Amount in LC', 'Reserv.No.']
     return df[final_cols]
 
 
@@ -78,6 +79,7 @@ def prepare_zmb25(df):
     df[cols1] = df[cols1].applymap(lambda x: 1 if x=='X' else 0)
     for col in cols2:
         df[col] = df[col].str.replace('.', '/', regex=False)
+    df = df.drop(columns=['Full Name'])
     return df
     
 
@@ -96,7 +98,7 @@ def prepare_zmm001(df):
 
 def prepare_mcba(df):
     logging.info("Starting to process MCBA")
-    df = df[df['Matl type']=='ZMAT' | df['Matl type']=='ZPEC']
+    df = df[(df['Matl type']=='ZMAT') | (df['Matl type']=='ZPEC')]
     final_cols = ['Plant', 'Material', 'Stor. loc.', 'MRP Type', 'Month', 'Val.stk(I)', 'Val.stk(R)', 'Val. stock', 'ValStckVal', 'VlStkRcVal', 'VlStkIssVl']
     df = df[final_cols]
     df = df[df['Material'].notna()]

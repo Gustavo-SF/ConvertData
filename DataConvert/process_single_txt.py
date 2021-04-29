@@ -14,10 +14,10 @@ def process_txtfile(msg, conn_string, container):
 
     starts = {
         "MB52": 1,
-        "MB51": 21,
+        "MB51": 22,
         "ZMM001": 14,
         "ZMB25": 24,
-        "MB51-MEP": 21,
+        "MB51-MEP": 22,
         "ZMM001-Extra": 14,
     }
 
@@ -25,16 +25,21 @@ def process_txtfile(msg, conn_string, container):
     with io.BytesIO(blobStream) as txt:
         for i, row in enumerate(txt):
             row = row.decode('cp1252') #ISO-8859-1 was here before 
+            if (i > max(1, starts[msg])) and (i < starts[msg]+3):
+                logging.info(row)
             if i == starts[msg]:
                 col_len = len(row)
                 cols = row.split("|")
                 cols = [a.strip() for a in cols[1:-1]]
                 split_indices = [i for i, ltr in enumerate(row) if ltr=='|']
+                logging.info("These are the indices taken from the above columns:")
+                logging.info(split_indices)
             if (i > starts[msg]+1):
                 if len(row) == col_len:
                     if  row[split_indices[-2]]=='|':
                         list_to_append = [row[i+1:j].strip() for i,j in zip(split_indices[:-1], split_indices[1:None])]
                         df_list.append((list_to_append))
+
 
     df = pd.DataFrame(df_list)
     df.columns = cols
