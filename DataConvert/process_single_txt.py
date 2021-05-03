@@ -12,7 +12,7 @@ def process_txtfile(msg, conn_string, container):
     blob = BlobClient.from_connection_string(conn_str=conn_string, container_name=container, blob_name=f"{msg}.TXT")
     blobStream = blob.download_blob().content_as_bytes()
 
-    starts = {
+    starts = {      # change numbers here when needed
         "MB52": 1,
         "MB51": 22,
         "ZMM001": 14,
