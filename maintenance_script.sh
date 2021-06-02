@@ -7,6 +7,9 @@ func azure functionapp publish $functionappName
 # ensure the function has propagated
 sleep 5s
 
+queueName="uploadedfiles"
+storageAccount="dsthesissa"
+
 is=("MB52" "MB51" "MCBA" "ZMRP" "ZFI" "ZMB25")
 for ((i = 0; i < 6; i++)) 
 	do az storage message put \
