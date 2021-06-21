@@ -17,7 +17,7 @@ def main(msg: func.QueueMessage, output: func.Out[func.InputStream]):
     txt_to_csv = ['MB51', 'MB52', 'ZMB25', 'ZMM001', 'MB51-MEP']
     join_list_xlsx = ['ZMRP', 'MCBA']
     xlsx_to_csv = ['ZFI']
-    extra_txt = ['ZMM001-Extra']
+    extra_txt = ['ZMM001-Extra', 'MaterialClasses']
 
     if message == "all":
         for new_msg in txt_to_csv+join_list_xlsx+xlsx_to_csv:

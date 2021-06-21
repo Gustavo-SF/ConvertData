@@ -19,6 +19,7 @@ def process_txtfile(msg, conn_string, container):
         "ZMB25": 24,
         "MB51-MEP": 22,
         "ZMM001-Extra": 14,
+        "MaterialClasses": 9
     }
 
     df_list = []
@@ -57,6 +58,8 @@ def process_txtfile(msg, conn_string, container):
         df = prepare_zmm001(df)
     elif msg=='ZMB25':
         df = prepare_zmb25(df)
+    elif msg=='MaterialClasses':
+        df = prepare_materialclasses(df)
     # output
     outcsv = df.to_csv(index=False, encoding='utf-8')
     

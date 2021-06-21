@@ -120,3 +120,10 @@ def prepare_mrp(df):
             return 'Medium'
     df['PRIORITY'] = df['PRIORITY'].apply(priority)
     return df
+
+
+def prepare_materialclasses(df):
+    logging.info("Starting to process Material Classes")
+    cols = ["PIC", "Material"]
+    df.columns = cols
+    return df
