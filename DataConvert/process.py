@@ -4,7 +4,6 @@ import io
 import pandas as pd
 from azure.storage.blob import BlobClient, ContainerClient
 
-from .singlefile_processing import *
 from .settings import starts, functions, LogMessages as LOGS
       
       
@@ -84,7 +83,7 @@ def process_xlsx_folder(msg: str, conn_string: str, container: str, subdir: str)
             df.columns = cols
         final_df = pd.concat([final_df, df])
     
-    df = functions[msg](df)
+    final_df = functions[msg](final_df)
 
     outcsv = final_df.to_csv(index=False, encoding='utf-8')
 

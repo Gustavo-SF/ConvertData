@@ -1,14 +1,12 @@
-from dataclasses import dataclass
 from typing import List
 
 from .transform import *
 
-@dataclass
 class Files:
     """Data class to hold the different messages allowed to be processed"""
     text_update: List[str] = ["MB51", "MB52", "ZMB25"]
     xlsx_folder: List[str] = ["MCBA"]
-    xslx: List[str] = ["ZFI"]
+    xlsx: List[str] = ["ZFI"]
     other_text: List[str] = ["ZMM001-Extra", "MB51-MEP", "ZMM001", "MaterialClasses"]
 
     @classmethod
@@ -17,9 +15,8 @@ class Files:
 
     @classmethod
     def all(cls):
-        return cls.xlsx_folder + cls.xslx + cls.text()
+        return cls.xlsx_folder + cls.xlsx + cls.text()
 
-@dataclass
 class LogMessages:
     """Data to change the log messages in the function"""
 

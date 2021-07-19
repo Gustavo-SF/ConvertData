@@ -1,10 +1,8 @@
 import pandas as pd
 import logging
 
-from .settings import LogMessages as LOGS
 
 def prepare_mb51(df):
-    logging.info(LOGS.specific_process)
     cols = ['Quantity', 'Amount in LC']
     def fix_values(x):
         x = x.replace('.','')
@@ -22,7 +20,6 @@ def prepare_mb51(df):
 
 
 def prepare_mb51mep(df):
-    logging.info(LOGS.specific_process)
     cols = ['Quantity', 'Amount in LC']
     def fix_values(x):
         x = x.replace('.','')
@@ -39,7 +36,6 @@ def prepare_mb51mep(df):
 
 
 def prepare_mb52(df):
-    logging.info(LOGS.specific_process)
     new_cols = ['Plant', 'Warehouse', 'Material', 'Unrestricted', 'Blocked', 'InTrf', 'InTransit']
     df.columns = new_cols
     cols = ['Unrestricted', 'Blocked', 'InTrf', 'InTransit']
@@ -54,7 +50,6 @@ def prepare_mb52(df):
 
 
 def prepare_zfi(df):
-    logging.info(LOGS.specific_process)
     final_cols = ['From', 'To', 'Valid from', 'Exch. Rate']
     def fix_value(x):
         x = x.replace('.','')
@@ -67,7 +62,6 @@ def prepare_zfi(df):
 
 
 def prepare_zmb25(df):
-    logging.info(LOGS.specific_process)
     def fix_values(x):
         x = x.replace('.','')
         x = x.replace(',','.')
@@ -86,7 +80,6 @@ def prepare_zmb25(df):
     
 
 def prepare_zmm001(df):
-    logging.info(LOGS.specific_process)
     cols = ['Created', 'Last Chg']
     for col in cols:
         df[col] = df[col].str.replace('.', '/', regex=False)
@@ -99,12 +92,10 @@ def prepare_zmm001(df):
 
 
 def prepare_mcba(df):
-    logging.info(LOGS.specific_process)
-    df = df[(df['Matl type']=='ZMAT') | (df['Matl type']=='ZPEC')]
-    final_cols = ['Plant', 'Material', 'Stor. loc.', 'MRP Type', 'Month', 'Val.stk(I)', 'Val.stk(R)', 'Val. stock', 'ValStckVal', 'VlStkRcVal', 'VlStkIssVl']
+    final_cols = ['Plant', 'Material', 'Stor. Loc.', 'MRP Type', 'Month', 'Val.stk(I)', 'Val.stk(R)', 'Val. stock', 'ValStckVal', 'VlStkRcVal', 'VlStkIssVl']
     df = df[final_cols]
     df = df[df['Material'].notna()]
-    df['Stor. loc.'] = df['Stor. loc.'].astype(str).apply(lambda x: x.split('.0')[0])
+    df['Stor. Loc.'] = df['Stor. Loc.'].astype(str).apply(lambda x: x.split('.0')[0])
     df['Plant'] = df['Plant'].astype(str).apply(lambda x: x.split('.0')[0])
     df['Month'] = df['Month'].astype(str).apply(lambda x: "01/"+x.split('.')[0]+"/"+x.split('.')[1] if int(x.split('.')[1]) > 202 else "01/"+x.split('.')[0]+"/2020")
     df.loc[df['Material'].isna(), 'Material'] = ''
@@ -112,7 +103,6 @@ def prepare_mcba(df):
 
 
 def prepare_mrp(df):
-    logging.info(LOGS.specific_process)
     def priority(x):
         if x=='@08@':
             return 'Low'
