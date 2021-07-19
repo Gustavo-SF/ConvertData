@@ -1,40 +1,49 @@
 import logging
-import azure.functions as func
 import os
 
+import azure.functions as func
+from azure.storage.queue import (
+    QueueClient, 
+    TextBase64EncodePolicy
+)
 
-import logging
-from .process_single_txt import *
-from .send_queue_message import send_message
+from .settings import Files, LogMessages as LOGS
+from .process import *
+
+
+def send_message(msg: str, connect_str: str, queue_name: str) -> None:
+    """Send message back to the Queue to trigger it again"""
+
+    base64_queue_client = QueueClient.from_connection_string(
+                    conn_str = connect_str,
+                    queue_name = queue_name,
+                    message_encode_policy = TextBase64EncodePolicy()
+                )
+    base64_queue_client.send_message(msg)
 
 
 def main(msg: func.QueueMessage, output: func.Out[func.InputStream]):
+    """Code to be executed when trigger is set"""
+
     message = msg.get_body().decode('utf-8')
+    logging.info(LOGS.initial.format(msg=message))
 
     connection_string = os.getenv("AzureWebJobsStorage")
-    containerName = "raw-data"
-
-    txt_to_csv = ['MB51', 'MB52', 'ZMB25', 'ZMM001', 'MB51-MEP']
-    join_list_xlsx = ['ZMRP', 'MCBA']
-    xlsx_to_csv = ['ZFI']
-    extra_txt = ['ZMM001-Extra', 'MaterialClasses']
+    container_name = "raw-data"
 
     if message == "all":
-        for new_msg in txt_to_csv+join_list_xlsx+xlsx_to_csv:
+        for new_msg in Files.all():
             send_message(new_msg, connection_string, "uploadedfiles")
-    elif message in txt_to_csv+extra_txt:
-        outcsv = process_txtfile(message, connection_string, containerName)
-        output.set(outcsv)
-        logging.info(f"Success creating {message}.csv!")
-    elif message in xlsx_to_csv:
-        outcsv = process_xlsxfile(message, connection_string, containerName)
-        output.set(outcsv)
-        logging.info(f"Success creating {message}.csv!")
-    elif message in join_list_xlsx:
-        outcsv = join_xlsx(message, connection_string, containerName, subdir=f"{message}/")
-        output.set(outcsv)
-        logging.info(f"Success creating {message}.csv!")
+
     else:
-        logging.info(f"No command defined for the message: {message}")
-
-
+        if message in Files.all():
+            if message in Files.text():
+                output_csv = process_text_file(message, connection_string, container_name)
+            elif message in Files.xlsx:
+                output_csv = process_xlsx_file(message, connection_string, container_name)
+            elif message in Files.xlsx_folder:
+                output_csv = process_xlsx_folder(message, connection_string, container_name, subdir=f"{message}/")
+            output.set(output_csv)
+            logging.info(LOGS.csv_creation_success.format(msg=message))
+        else:
+            logging.info(LOGS.no_command_defined.format(msg=message))

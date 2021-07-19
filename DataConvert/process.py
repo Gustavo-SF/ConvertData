@@ -1,27 +1,23 @@
 import logging
+import io
+
 import pandas as pd
 from azure.storage.blob import BlobClient, ContainerClient
-import io
+
 from .singlefile_processing import *
+from .settings import starts, functions, LogMessages as LOGS
       
       
-def process_txtfile(msg, conn_string, container): 
+def process_text_file(msg: str, conn_string: str, container: str) -> str: 
+    """Function to process text data and create a dataframe"""
 
-    logging.info(f"Starting to process file {msg}...")
+    logging.info(LOGS.process_text.format(msg=msg))
 
+    # Get data from blob storage
     blob = BlobClient.from_connection_string(conn_str=conn_string, container_name=container, blob_name=f"{msg}.TXT")
     blobStream = blob.download_blob().content_as_bytes()
 
-    starts = {      # change numbers here when needed
-        "MB52": 1,
-        "MB51": 22,
-        "ZMM001": 14,
-        "ZMB25": 24,
-        "MB51-MEP": 22,
-        "ZMM001-Extra": 14,
-        "MaterialClasses": 9
-    }
-
+    # Process text file
     df_list = []
     with io.BytesIO(blobStream) as txt:
         for i, row in enumerate(txt):
@@ -47,45 +43,38 @@ def process_txtfile(msg, conn_string, container):
 
     # Remove the repeated rows with the column names
     df = df[df[df.columns[1]]!=df.columns[1]]
+    df = functions[msg](df)
 
-    if msg=='MB52':
-        df = prepare_mb52(df)
-    elif msg=='MB51':
-        df = prepare_mb51(df)
-    elif msg=='MB51-MEP':
-        df = prepare_mb51mep(df)
-    elif msg=='ZMM001' or msg=='ZMM001-Extra':
-        df = prepare_zmm001(df)
-    elif msg=='ZMB25':
-        df = prepare_zmb25(df)
-    elif msg=='MaterialClasses':
-        df = prepare_materialclasses(df)
-    # output
+    # Output
     outcsv = df.to_csv(index=False, encoding='utf-8')
     
     return outcsv
 
 
-def process_xlsxfile(msg, conn_string, container):
-    logging.info(f"Starting to process file {msg}...")
+def process_xlsx_file(msg: str, conn_string: str, container: str) -> str:
+    """Function to process excel data and create a dataframe"""
+
+    logging.info(LOGS.process_xlsx.format(msg=msg))
+
+    # Get data from blob storage
     blob = BlobClient.from_connection_string(conn_str=conn_string, container_name=container, blob_name=f"{msg}.XLSX")
     df = pd.read_excel(blob.download_blob().content_as_bytes())
 
-    if msg=='ZFI':
-        df = prepare_zfi(df)
+    df = functions[msg](df)
     
     outcsv = df.to_csv(index=False, encoding='utf-8')
 
     return outcsv
 
 
-def join_xlsx(msg, conn_string, container, subdir):
-    logging.info(f"Starting to process folder {msg}...")
+def process_xlsx_folder(msg: str, conn_string: str, container: str, subdir: str) -> str:
+    """Function to process excel folder data and create a dataframe"""
 
+    logging.info(LOGS.process_xlsx_folder.format(msg=msg))
+
+    # Get data from blob storage
     blobs_ls = ContainerClient.from_connection_string(conn_str=conn_string, container_name=container).list_blobs(name_starts_with=subdir)
-
     final_df = pd.DataFrame()
-
     for i, blob in enumerate(blobs_ls):
         blob = BlobClient.from_connection_string(conn_str=conn_string, container_name=container, blob_name=blob.name)
         df = pd.read_excel(blob.download_blob().content_as_bytes())
@@ -95,10 +84,8 @@ def join_xlsx(msg, conn_string, container, subdir):
             df.columns = cols
         final_df = pd.concat([final_df, df])
     
-    if msg=='MCBA':
-        final_df = prepare_mcba(final_df)
-    elif msg=='ZMRP':
-        final_df = prepare_mrp(final_df)
+    df = functions[msg](df)
 
     outcsv = final_df.to_csv(index=False, encoding='utf-8')
+
     return outcsv

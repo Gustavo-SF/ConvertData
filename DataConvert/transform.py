@@ -1,8 +1,10 @@
 import pandas as pd
 import logging
 
+from .settings import LogMessages as LOGS
+
 def prepare_mb51(df):
-    logging.info("Starting to process MB51")
+    logging.info(LOGS.specific_process)
     cols = ['Quantity', 'Amount in LC']
     def fix_values(x):
         x = x.replace('.','')
@@ -20,7 +22,7 @@ def prepare_mb51(df):
 
 
 def prepare_mb51mep(df):
-    logging.info("Starting to process MB51-MEP")
+    logging.info(LOGS.specific_process)
     cols = ['Quantity', 'Amount in LC']
     def fix_values(x):
         x = x.replace('.','')
@@ -37,10 +39,10 @@ def prepare_mb51mep(df):
 
 
 def prepare_mb52(df):
-    logging.info("Starting to process MB52")
-    new_cols = ['Plant', 'Warehouse', 'Material', 'Unrestricted', 'UnrestrictedValue', 'Blocked', 'BlockedValue', 'InTrf', 'InTransit', 'InTransitValue']
+    logging.info(LOGS.specific_process)
+    new_cols = ['Plant', 'Warehouse', 'Material', 'Unrestricted', 'Blocked', 'InTrf', 'InTransit']
     df.columns = new_cols
-    cols = ['Unrestricted', 'UnrestrictedValue', 'Blocked', 'BlockedValue', 'InTrf', 'InTransit', 'InTransitValue']
+    cols = ['Unrestricted', 'Blocked', 'InTrf', 'InTransit']
     def fix_values(x):
         x = x.replace('.','')
         x = x.replace(',','.')
@@ -52,7 +54,7 @@ def prepare_mb52(df):
 
 
 def prepare_zfi(df):
-    logging.info("Starting to process ZFI")
+    logging.info(LOGS.specific_process)
     final_cols = ['From', 'To', 'Valid from', 'Exch. Rate']
     def fix_value(x):
         x = x.replace('.','')
@@ -65,7 +67,7 @@ def prepare_zfi(df):
 
 
 def prepare_zmb25(df):
-    logging.info("Starting to process ZMB25")
+    logging.info(LOGS.specific_process)
     def fix_values(x):
         x = x.replace('.','')
         x = x.replace(',','.')
@@ -84,7 +86,7 @@ def prepare_zmb25(df):
     
 
 def prepare_zmm001(df):
-    logging.info("Starting to process ZMM001")
+    logging.info(LOGS.specific_process)
     cols = ['Created', 'Last Chg']
     for col in cols:
         df[col] = df[col].str.replace('.', '/', regex=False)
@@ -97,7 +99,7 @@ def prepare_zmm001(df):
 
 
 def prepare_mcba(df):
-    logging.info("Starting to process MCBA")
+    logging.info(LOGS.specific_process)
     df = df[(df['Matl type']=='ZMAT') | (df['Matl type']=='ZPEC')]
     final_cols = ['Plant', 'Material', 'Stor. loc.', 'MRP Type', 'Month', 'Val.stk(I)', 'Val.stk(R)', 'Val. stock', 'ValStckVal', 'VlStkRcVal', 'VlStkIssVl']
     df = df[final_cols]
@@ -110,7 +112,7 @@ def prepare_mcba(df):
 
 
 def prepare_mrp(df):
-    logging.info("Starting to process MRP")
+    logging.info(LOGS.specific_process)
     def priority(x):
         if x=='@08@':
             return 'Low'
