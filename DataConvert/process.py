@@ -76,7 +76,7 @@ def process_xlsx_folder(msg: str, conn_string: str, container: str, subdir: str)
     final_df = pd.DataFrame()
     for i, blob in enumerate(blobs_ls):
         blob = BlobClient.from_connection_string(conn_str=conn_string, container_name=container, blob_name=blob.name)
-        df = pd.read_excel(blob.download_blob().content_as_bytes())
+        df = pd.read_excel(blob.download_blob().content_as_bytes(), dtype=str)
         if i==0:
             cols = df.columns
         else:

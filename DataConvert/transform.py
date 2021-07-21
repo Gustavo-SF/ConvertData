@@ -2,6 +2,12 @@ import pandas as pd
 import logging
 
 
+def prepare_month_column(series: pd.Series) -> pd.Series:
+    """Transform %m.%Y in %Y-%m format of month column"""
+    series_fmt = series.apply(lambda x: f"{x.split('.')[1]}-{int(x.split('.')[0]):02}")
+    return series_fmt
+
+
 def prepare_mb51(df):
     cols = ['Quantity', 'Amount in LC']
     def fix_values(x):
@@ -97,7 +103,7 @@ def prepare_mcba(df):
     df = df[df['Material'].notna()]
     df['Stor. Loc.'] = df['Stor. Loc.'].astype(str).apply(lambda x: x.split('.0')[0])
     df['Plant'] = df['Plant'].astype(str).apply(lambda x: x.split('.0')[0])
-    df['Month'] = df['Month'].astype(str).apply(lambda x: "01/"+x.split('.')[0]+"/"+x.split('.')[1] if int(x.split('.')[1]) > 202 else "01/"+x.split('.')[0]+"/2020")
+    df['Month'] = prepare_month_column(df['Month'])
     df.loc[df['Material'].isna(), 'Material'] = ''
     return df
 
