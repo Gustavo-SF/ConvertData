@@ -10,10 +10,9 @@ sleep 5s
 queueName="uploadedfiles"
 storageAccount="dsthesissa"
 
-is=("MB52" "MB51" "MCBA" "ZFI" "ZMB25")
-for ((i = 0; i < 5; i++)) 
+for TRANSACTION in "MB52" "MB51" "MCBA" "ZFI" "ZMB25"
 	do az storage message put \
-        --content $(echo -n ${is[i]} | base64) \
+        --content $(echo -n ${TRANSACTION} | base64) \
         -q $queueName \
         --time-to-live 120 \
         --auth-mode login \
