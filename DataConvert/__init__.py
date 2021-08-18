@@ -1,49 +1,39 @@
 import logging
 import os
+import sys
+from collections import defaultdict
 
 import azure.functions as func
-from azure.storage.queue import (
-    QueueClient, 
-    TextBase64EncodePolicy
-)
+from azure.storage.blob import ContainerClient
 
-from .settings import Files, LogMessages as LOGS
-from .process import *
+from .settings import LogMessages as LOGS
+from .process import ProcessingPipeline
 
 
-def send_message(msg: str, connect_str: str, queue_name: str) -> None:
-    """Send message back to the Queue to trigger it again"""
+filefmt = "%(levelname)s - %(asctime)s - %(message)s"
+logging.basicConfig(stream=sys.stdout, level=logging.INFO, format=filefmt)
 
-    base64_queue_client = QueueClient.from_connection_string(
-                    conn_str = connect_str,
-                    queue_name = queue_name,
-                    message_encode_policy = TextBase64EncodePolicy()
-                )
-    base64_queue_client.send_message(msg)
-
-
-def main(msg: func.QueueMessage, output: func.Out[func.InputStream]):
+def main(msg: func.QueueMessage):
     """Code to be executed when trigger is set"""
 
     message = msg.get_body().decode('utf-8')
     logging.info(LOGS.initial.format(msg=message))
 
     connection_string = os.getenv("AzureWebJobsStorage")
-    container_name = "raw-data"
 
-    if message == "all":
-        for new_msg in Files.all():
-            send_message(new_msg, connection_string, "uploadedfiles")
+    blob_container_client = ContainerClient.from_connection_string(conn_str=connection_string, container_name=message)
+    blob_list = [blob.name for blob in blob_container_client.list_blobs()]
 
-    else:
-        if message in Files.all():
-            if message in Files.text():
-                output_csv = process_text_file(message, connection_string, container_name)
-            elif message in Files.xlsx:
-                output_csv = process_xlsx_file(message, connection_string, container_name)
-            elif message in Files.xlsx_folder:
-                output_csv = process_xlsx_folder(message, connection_string, container_name, subdir=f"{message}/")
-            output.set(output_csv)
-            logging.info(LOGS.csv_creation_success.format(msg=message))
-        else:
-            logging.info(LOGS.no_command_defined.format(msg=message))
+    transactions_to_process = defaultdict(list)
+    for file in blob_list:
+        if len(file.split("/")) > 1:
+            transactions_to_process[file.split("/")[0]].append(file)
+
+    for transaction in transactions_to_process:
+        if transaction == "mb52":
+            files = transactions_to_process[transaction]
+            pipeline = ProcessingPipeline(transaction, files, blob_container_client)
+            pipeline.transform()
+            pipeline.upload()
+
+    logging.info(LOGS.finished_processing.format(msg=message))

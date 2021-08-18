@@ -7,13 +7,6 @@
       "direction": "in",
       "queueName": "uploadedfiles",
       "connection": "AzureWebJobsStorage"
-    },
-    {
-      "name": "output",
-      "type": "blob",
-      "path": "data-ready/{queueTrigger}.csv",
-      "connection": "AzureWebJobsStorage",
-      "direction": "out"
     }
   ]
 }

@@ -11,6 +11,7 @@ Publish
 *.Cache
 project.lock.json
 
+data-ready/
 /packages
 /TestResults
 
@@ -27,6 +28,7 @@ dist
 
 # Local python packages
 .python_packages/
+.vscode/
 
 # Python Environments
 .env
@@ -41,4 +43,3 @@ venv.bak/
 __pycache__/
 *.py[cod]
 *$py.class
-.vscode/
