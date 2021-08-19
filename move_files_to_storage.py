@@ -12,8 +12,8 @@ from azure.storage.blob import ContainerClient, BlobServiceClient
 container = sys.argv[1]
 con_string = json.load(open(Path(".") / "local.settings.json", "r"))["Values"]["AzureWebJobsStorage"]
 optimization_for_gets_and_puts = {
-    "max_single_put_size": 2 * 1024 * 1024,  # split to 4MB chunks`
-    "max_single_get_size": 2 * 1024 * 1024,  # split to 4MB chunks
+    "max_single_put_size": 4 * 1024 * 1024,  # split to 4MB chunks`
+    "max_single_get_size": 4 * 1024 * 1024,  # split to 4MB chunks
 }
 container_client = ContainerClient.from_connection_string(conn_str=con_string, container_name=container, **optimization_for_gets_and_puts)
 
