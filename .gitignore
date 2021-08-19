@@ -11,17 +11,19 @@ Publish
 *.Cache
 project.lock.json
 
-data-ready/
 /packages
 /TestResults
 
 /tools/NuGet.exe
 /App_Data
 /secrets
-/data
 .secrets
 appsettings.json
-local.settings.json
+azcopy
+
+# raw-data
+data/*
+!README.md
 
 node_modules
 dist

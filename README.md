@@ -2,16 +2,17 @@
 
 > This repository is part of the Construction Supply Chain Pipeline for the MSc Thesis developed in Mota-Engil with support from Faculty of Sciences of the University of Lisbon. 
 
-The `Data Convert` function has the objective of processing specific files for a thesis project. The function is to be published in the Azure FunctionApp service. Conversion is meant to be used for the following files:
+The `Data Convert` function has the objective of processing specific files for a thesis project. The function is to be published in the Azure FunctionApp service. Conversion is currently being used for the following transactions:
 * `"MB51"`
-* `"MB51-MEP"`
 * `"MB52"`
 * `"ZMB25"`
 * `"MCBA"`
 * `"ZMM001"`
 * `"ZFI"`
 * `"ZMRP"`
-* `"ZMM001-Extra"`
+* `"MONOS"`
+* `"PICPS"`
+* `"SP99"`
 
 **Note**: specifications about each of these files are to be given to the Mota-Engil group.
 
@@ -19,12 +20,12 @@ Some files are in TXT format while others are in XLSX in a single or multiple fi
 
 ## How it works
 
-A message must be sent to a queue storage (url of the queue storage has the format `https://{STORAGEACCOUNT}.queue.core.windows.net/uploadedfiles/`). The message must contain the name of the file it is intended to be processed and encoded in base64. The files to be processed must exist in `https://{STORAGEACCOUNT}.blob.core.windows.net/raw-data/`. To process all of the files without sending multiple messages, it can be sent a new message to the queue with the body: `"all"`. 
+A message must be sent to a queue storage (url of the queue storage has the format `https://{STORAGEACCOUNT}.queue.core.windows.net/{QUEUE_NAME}/`). The message must contain the name of the file it is intended to be processed and encoded in base64. The files to be processed must exist in `https://{STORAGEACCOUNT}.blob.core.windows.net/{CONTAINER}/`. To process all of the files without sending multiple messages, it can be sent a new message to the queue with the body: `"{CONTAINER}"`.
 
-One way to do this processing could be in the following way:
+Currently we divide folders into deployment and maintenance. So in order to do this processing, it could be done the following way:
 
 ```bash
-message=$(echo -n "MESSAGE" | base64)
+message=$(echo -n "deployment" | base64)
 
 az storage message put \
   --content $message \
@@ -43,25 +44,25 @@ The directory is organized in the following way:
     .
     ├── DataConvert/
     │   │
-    │   ├── __init__.py     # Directs the message to the processing script
+    │   ├── __init__.py     # Initializes and executes the pipeline
     │   │
-    │   ├── process_single_txt.py   # Loads data and converts to dataframe
+    │   ├── process.py   # Contains the pipeline
     │   │
-    │   ├── singlefile_processing.py    # Individual file processing
+    │   ├── transform.py    # Single transaction functions
     │   │
     │   ├── function.json    # Configuration file for function in and output
     │   │
-    │   └── send_queue_message.py   # Function to send message to queue
+    │   └── settings.py   # Definitions for the processing
     │   
     ├── host.json   # Configuration host file 
     |
-    ├── deploy_script.sh   # Initial bash deployment script
+    ├── deployment.sh   # Initial bash deployment script
     |
-    ├── maintenance_script.sh  # Script for when data is to be added       
+    ├── maintenance.sh  # Script for when data is to be added       
     |
     └── requirements.txt  # Requirements for python code
 
-The host.json is automatically created with the creation of the functionApp. But we still had to define the *function.json* according to what was intened. In this case we set the function app to initialize with a queue message and to output a blob to a storage. Both for the queue and for the blob storage, we use the same ADLS to utilize the same access key.
+The host.json is automatically created with the creation of the functionApp. But we still had to define the *function.json* according to what was intened. In this case we set the function app to initialize with a queue message. We use the already existing connection string to the storage to connect to the queue storage.
 
 
 ```json
@@ -75,62 +76,41 @@ The host.json is automatically created with the creation of the functionApp. But
       "queueName": "uploadedfiles",
       "connection": "AzureWebJobsStorage"
     },
-    {
-      "name": "output",
-      "type": "blob",
-      "path": "data-ready/{queueTrigger}.csv",
-      "connection": "AzureWebJobsStorage",
-      "direction": "out"
-    }
   ]
 }
 ```
 *funtion.json*  
 
-Insice the *\_\_init\_\_.py* file we have the function that will initialize upon the trigger given to the Azure Function. In this case, when the message in sent, the function initializes and will begin the processing of the file according to the message it was given. In this case the message contains the name of the file so it will use the message sent to the queue storage to build the file path and retrieve the wanted file.
+Inside the *\_\_init\_\_.py* file we have the function that will initialize upon the trigger given to the Azure Function. In this case, when the message in sent, the function initializes and will begin the processing of the container that the message indicates.
 
-There are three ways to process files in this function:
+When we have the paths to all the files we want to process, we can initialize the ProcessingPipeline to transform all of the data into the format we want.
 
-One is processing text files:
+For example, in the case we have text files, we will use the `_process_text_files` method to process the file initially:
+
 ```python
-def process_txtfile(msg, conn_string, container): 
-
-    logging.info(f"Starting to process file {msg}...")
-
-    blob = BlobClient.from_connection_string(conn_str=conn_string, container_name=container, blob_name=f"{msg}.TXT")
-    blobStream = blob.download_blob().content_as_bytes()
-
-    starts = {
-        "MB52": 1,
-        "MB51": 22,
-        "ZMM001": 14,
-        "ZMB25": 24,
-        "MB51-MEP": 22,
-        "ZMM001-Extra": 14,
-    }
+    def _process_text_files(self):
+        """Method that allows the processing of multiple text files"""
+        logging.info(f"Processing {self.transaction} as TXT files.")
 (...)
 ```
-*process_single_txt.py* 
+*process.py* 
 
-This is a very important part to consider since TXT files are constantly changing according to the needs of the user. The dictionary variable `starts` has a number associated with each of the TXT files. This number represents the first row with the headers for the final CSV file. In the case this number changes, the code must be deployed to Azure FunctionApp.
+The whole text file processing is fully automatized, but it should still be monitored for any changes.
 
-Another type of processing is done for XLSX files. When we have only one XLSX file the file is read from the blob file directly. In the case there are several files in a folder, we get all the files inside a folder, independent of the name, and we concatenate their contentes; this means they should have the same structure.
+For all the files, we should take in mind that they are expected to have the same structure, else, the dataframe concatenation will fail. The final CSV file will be named after their directory. For example the file in  `mb51/2020-01-01_mb51.TXT` will go to the file `mb51.csv` in data-ready container.
 
-After having an initial version of a pandas DataFrame, we do all the transformation needed before uploading a cleaned version of the data inside the Azure SQL Database. 
+After having an initial version of a pandas DataFrame, we do all the transformation needed before uploading a cleaned version of the data inside the Azure SQL Database. The individual functions have the following format
 
 ```python
-def prepare_mcba(df):
-    logging.info("Starting to process MCBA")
+def prepare_mcba(df: pd.DataFrame) -> pd.DataFrame:
     df = df[(df['Matl type']=='ZMAT') | (df['Matl type']=='ZPEC')]
     (...)
 ```
-*singlefile_processing.py* 
+*transform.py* 
 
-All the different files have different transformations, therefore it was needed to build different functions for each of them. This should happen again for any added data file.
+All the different files have different transformations, therefore it was needed to build different functions for each of them. This should happen again for any added data file. This also makes any addition of transformation to be easier to do.
 
-Finally, the DataFrame is returned to the function within the *process_single_txt.py*, turned into an output ready to be given as the output for the FunctionApp.This is written in bytes, and we explicitly write it in UTF-8 encoding.
-
-The *send_queue_message.py* has the function that resends a queue message back to the queue storage. We only use this when we want all of the files to be processed (except for the ZMM001-Extra.TXT file), and this is done \_\_init\_\_.py.
+All these functions are processed within the `ProcessingPipeline`, turned into an output ready to be PUT back again into the Azure Data Lake Storage.This is written in bytes, and we explicitly write it in UTF-8 encoding.
 
 ## Learn more
 

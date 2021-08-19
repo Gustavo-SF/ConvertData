@@ -44,7 +44,7 @@ class ProcessingPipeline:
         outcsv = self.df.to_csv(index=False, encoding='utf-8')
 
         if UPLOAD_LOCALLY:
-            data_ready_dir = Path(__file__).parent.parent / "data-ready"
+            data_ready_dir = Path(__file__).parent.parent / "data" / "data-ready"
             data_ready_dir.mkdir(exist_ok=True)
             with open(data_ready_dir / f"{self.transaction}.csv", "w") as f:
                 f.write(outcsv)
