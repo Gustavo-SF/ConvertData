@@ -1,5 +1,8 @@
+"""
+Transformation module for each of the transactions
+"""
+
 import pandas as pd
-import logging
 
 
 def prepare_month_column(series: pd.Series) -> pd.Series:
@@ -8,120 +11,154 @@ def prepare_month_column(series: pd.Series) -> pd.Series:
     return series_fmt
 
 
+def fix_values(x: str) -> float:
+    """Fix numeric values"""
+    x = x.replace(".", "")
+    x = x.replace(",", ".")
+    if x[-1] == "-":
+        x = "-" + x[:-1]
+    return float(x)
+
+
+# The following section has prepare functions for each of the transactions
+# in case it is needed to make any specific change to one of them, we just
+# need to update the function.
+#
+# They should always receive and return a dataframe.
+
+
 def prepare_mb51(df):
-    cols = ['Quantity', 'Amount in LC']
-    def fix_values(x):
-        x = x.replace('.','')
-        x = x.replace(',','.')
-        if x[-1]=='-':
-            x = "-"+x[:-1]
-        return float(x)
+    cols = ["quantity", "amount in lc"]
     df[cols] = df[cols].applymap(fix_values)
-    df['Entry Date'] = df['Entry Date'].str.replace('.', '/', regex=False)
-    df['Req. Date'] = df['Req. Date'].str.replace('.', '/', regex=False)
-    df['Id'] = ''
-    df['User Name'] = df['User Name'].astype('category').cat.codes
-    final_cols = ['Id', 'Plnt', 'SLoc', 'Material', 'Quantity', 'MvT', 'Entry Date', 'Req. Date', 'Amount in LC', 'Reserv.no.']
-    return df[final_cols]
-
-
-def prepare_mb51mep(df):
-    cols = ['Quantity', 'Amount in LC']
-    def fix_values(x):
-        x = x.replace('.','')
-        x = x.replace(',','.')
-        if x[-1]=='-':
-            x = "-"+x[:-1]
-        return float(x)
-    df[cols] = df[cols].applymap(fix_values)
-    df['Entry Date'] = df['Entry Date'].str.replace('.', '/', regex=False)
-    df['Req. Date'] = df['Req. Date'].str.replace('.', '/', regex=False)
-    df['Id'] = ''
-    final_cols = ['Id', 'Plnt', 'SLoc', 'Material', 'Quantity', 'MvT', 'Entry Date', 'Req. Date', 'Amount in LC', 'Reserv.No.']
+    df["entry date"] = df["entry date"].str.replace(".", "/", regex=False)
+    df["req. date"] = df["req. date"].str.replace(".", "/", regex=False)
+    df["id"] = ""
+    df["user name"] = df["user name"].astype("category").cat.codes
+    final_cols = [
+        "id",
+        "plnt",
+        "sloc",
+        "material",
+        "quantity",
+        "mvt",
+        "entry date",
+        "req. date",
+        "amount in lc",
+        "reserv.no.",
+    ]
     return df[final_cols]
 
 
 def prepare_mb52(df):
-    new_cols = ['Plant', 'Warehouse', 'Material', 'Unrestricted', 'Blocked', 'InTrf', 'InTransit']
+    new_cols = [
+        "plant",
+        "warehouse",
+        "material",
+        "unrestricted",
+        "blocked",
+        "intrf",
+        "intransit",
+    ]
     df.columns = new_cols
-    cols = ['Unrestricted', 'Blocked', 'InTrf', 'InTransit']
-    def fix_values(x):
-        x = x.replace('.','')
-        x = x.replace(',','.')
-        if x[-1]=='-':
-            x = "-"+x[:-1]
-        return float(x)
+    cols = ["unrestricted", "blocked", "intrf", "intransit"]
     df[cols] = df[cols].applymap(fix_values)
     return df
 
 
 def prepare_zfi(df):
-    final_cols = ['From', 'To', 'Valid from', 'Exch. Rate']
+    final_cols = ["from", "to", "valid from", "exch. rate"]
+
     def fix_value(x):
-        x = x.replace('.','')
-        x = x.replace(',','.')
-        return 1/float(x[1:])
-    df['Exch. Rate'] = df['Exch. Rate'].apply(fix_value)
-    df['Exch. Rate'] = df['Exch. Rate'] * df['Ratio (to)'] / df['Ratio (from)']
-    df['Valid from'] = df['Valid from'].str.replace('.', '/', regex=False)
+        x = x.replace(".", "")
+        x = x.replace(",", ".")
+        return 1 / float(x[1:])
+
+    df["exch. rate"] = df["exch. rate"].apply(fix_value)
+    df["exch. rate"] = (
+        df["exch. rate"].astype(float)
+        * df["ratio (to)"].astype(float)
+        / df["ratio (from)"].astype(float)
+    )
+    df["valid from"] = df["valid from"].str.replace(".", "/", regex=False)
     return df[final_cols]
 
 
 def prepare_zmb25(df):
     def fix_values(x):
-        x = x.replace('.','')
-        x = x.replace(',','.')
-        if x[-1]=='-':
-            x = "-"+x[:-1]
+        x = x.replace(".", "")
+        x = x.replace(",", ".")
+        if x[-1] == "-":
+            x = "-" + x[:-1]
         return float(x)
-    cols1 = ['Del', 'FIs']
-    cols2 = ['ReqmtsDate', 'Deliv.date', 'Base date']
-    cols3 = ['Reqmnt qty', 'Diff. qty']
+
+    cols1 = ["del", "fis"]
+    cols2 = ["reqmtsdate", "deliv.date", "base date"]
+    cols3 = ["reqmnt qty", "diff. qty"]
     df[cols3] = df[cols3].applymap(fix_values)
-    df[cols1] = df[cols1].applymap(lambda x: 1 if x=='X' else 0)
+    df[cols1] = df[cols1].applymap(lambda x: 1 if x == "X" else 0)
     for col in cols2:
-        df[col] = df[col].str.replace('.', '/', regex=False)
-    df = df.drop(columns=['Full Name'])
+        df[col] = df[col].str.replace(".", "/", regex=False)
+    df = df.drop(columns=["full name"])
     return df
-    
+
 
 def prepare_zmm001(df):
-    cols = ['Created', 'Last Chg']
+    cols = ["created", "last chg"]
     for col in cols:
-        df[col] = df[col].str.replace('.', '/', regex=False)
-    df = df.drop(columns=['ValA'])
+        df[col] = df[col].str.replace(".", "/", regex=False)
+    df = df.drop(columns=["vala"])
     # 40319421 & 403119420 needed this
-    df.loc[df['Last Chg']=='00/00/0000', 'Last Chg'] = '31/01/2020'
-    df['Last Chg'] = pd.to_datetime(df['Last Chg'])
-    df = df.sort_values('Last Chg').drop_duplicates('Material',keep='first')
+    df.loc[df["last chg"] == "00/00/0000", "last chg"] = "31/01/2020"
+    df["last chg"] = pd.to_datetime(df["last chg"])
+    df = df.sort_values("last chg").drop_duplicates("material", keep="first")
     return df
 
 
 def prepare_mcba(df):
-    final_cols = ['Plant', 'Material', 'Stor. Loc.', 'MRP Type', 'Month', 'Val.stk(I)', 'Val.stk(R)', 'Val. stock', 'ValStckVal', 'VlStkRcVal', 'VlStkIssVl']
+    final_cols = [
+        "plant",
+        "material",
+        "stor. loc.",
+        "mrp type",
+        "month",
+        "val.stk(i)",
+        "val.stk(r)",
+        "val. stock",
+        "valstckval",
+        "vlstkrcval",
+        "vlstkissvl",
+    ]
     df = df[final_cols]
-    df = df[df['Material'].notna()]
-    df['Stor. Loc.'] = df['Stor. Loc.'].astype(str).apply(lambda x: x.split('.0')[0])
-    df['Plant'] = df['Plant'].astype(str).apply(lambda x: x.split('.0')[0])
-    df['Month'] = prepare_month_column(df['Month'])
-    df.loc[df['Material'].isna(), 'Material'] = ''
+    df = df[df["material"].notna()]
+    df["stor. loc."] = df["stor. loc."].astype(str).apply(lambda x: x.split(".0")[0])
+    df["plant"] = df["plant"].astype(str).apply(lambda x: x.split(".0")[0])
+    df["month"] = prepare_month_column(df["month"])
+    df.loc[df["material"].isna(), "material"] = ""
     return df
 
 
 def prepare_mrp(df):
     def priority(x):
-        if x=='@08@':
-            return 'Low'
-        elif x=='@0A@':
-            return 'High'
+        if x == "@08@":
+            return "Low"
+        elif x == "@0A@":
+            return "High"
         else:
-            return 'Medium'
-    df['PRIORITY'] = df['PRIORITY'].apply(priority)
+            return "Medium"
+
+    df["priority"] = df["priority"].apply(priority)
     return df
 
 
 def prepare_materialclasses(df):
-    logging.info("Starting to process Material Classes")
-    cols = ["PIC", "Material"]
+    cols = ["pic", "material"]
     df.columns = cols
+    return df
+
+
+def prepare_monos(df):
+    return df
+
+
+def prepare_sp99(df):
     return df

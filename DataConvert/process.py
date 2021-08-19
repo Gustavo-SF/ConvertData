@@ -1,22 +1,31 @@
+"""
+The Pipeline to use in the main function is here.
+It should hardly require any maintenance. 
+
+It is already prepared to transform what we define as type (TXT, XLSX and CSV),
+and download and upload into Blob Storage. In case we want to upload locally,
+we can also set UPLOAD_LOCALLY to True.
+"""
 import logging
 import io
 from pathlib import Path
 from statistics import mode
-from azure.storage import blob
+from typing import List
 
 import pandas as pd
-from azure.storage.blob import BlobServiceClient
 
-from .settings import LogMessages as LOGS, files_definitions
+from .settings import files_definitions
 
 
-UPLOAD_LOCALLY = True
-      
+UPLOAD_LOCALLY = False
+
 
 class ProcessingPipeline:
-    def __init__(self, transaction, files, blob_container_client):
+    """Main processing pipeline"""
+    def __init__(self, transaction: str, files: List[str], blob_client, blob_container_client):
         self.transaction = transaction
         self.files = files
+        self.blob_client = blob_client
         self.blob_container_client = blob_container_client
 
     def transform(self):
@@ -29,7 +38,7 @@ class ProcessingPipeline:
         elif type_of_file == "csv":
             self.df = self._process_csv_files()
         else:
-            raise Exception(f"Type of file processing for {type_of_file} has not been implemented yet!")
+            raise NotImplementedError(f"Type of file processing for {type_of_file} has not been implemented yet!")
 
     def upload(self):
         outcsv = self.df.to_csv(index=False, encoding='utf-8')
@@ -41,11 +50,12 @@ class ProcessingPipeline:
                 f.write(outcsv)
         
         else:
-            pass
+            blob = self.blob_client.get_blob_client(container="data-ready", blob=f"{self.transaction}.csv")
+            blob.upload_blob(outcsv)
 
     def _process_text_files(self):
         """Method that allows the processing of multiple text files"""
-        logging.info("Processing text files")
+        logging.info(f"Processing {self.transaction} as TXT files.")
 
         # Getting the function
         function_for_file = files_definitions[self.transaction]["function"]
@@ -57,11 +67,16 @@ class ProcessingPipeline:
 
             # We search for the first line with the most "|" in them. This should be the header for the TXT file
             value_to_search = mode([len(line.split("|")) for line in blob_content.split("\n")])
+            
+            line_ln = mode([len(line) for line in blob_content.split("\n")])
+
             for i, line in enumerate(blob_content.split("\n")):
-                if len(line.split("|"))==value_to_search:
+                if (len(line.split("|"))==value_to_search) & (len(line) == line_ln):
                     logging.info(line)
                     starts = i
                     break
+
+            
             
             # Process text file
             df_list = []
@@ -86,48 +101,57 @@ class ProcessingPipeline:
 
             # Remove the repeated rows with the column names
             df = df[df[df.columns[1]]!=df.columns[1]]
+            df = self._simplify_columns(df)
             df = function_for_file(df)
 
-        dataframe = pd.concat([dataframe, df])
+            dataframe = pd.concat([dataframe, df])
     
         return dataframe
 
+    def _process_xlsx_files(self):
+        """Method that allows the processing XLSX files"""
+        logging.info(f"Processing {self.transaction} as XLSX files.")
 
-def process_xlsx_file(msg: str, conn_string: str, container: str) -> str:
-    """Function to process excel data and create a dataframe"""
+        # Getting the function
+        function_for_file = files_definitions[self.transaction]["function"]
 
-    logging.info(LOGS.process_xlsx.format(msg=msg))
+        dataframe = pd.DataFrame()
 
-    # Get data from blob storage
-    blob = BlobClient.from_connection_string(conn_str=conn_string, container_name=container, blob_name=f"{msg}.XLSX")
-    df = pd.read_excel(blob.download_blob().content_as_bytes())
+        for file in self.files:
+            blob_content = self.blob_container_client.get_blob_client(blob=file).download_blob().content_as_bytes()
+            df = pd.read_excel(blob_content, dtype=str)
+            df = self._simplify_columns(df)
+            df = function_for_file(df)
 
-    df = functions[msg](df)
+            dataframe = pd.concat([dataframe, df])
     
-    outcsv = df.to_csv(index=False, encoding='utf-8')
+        return dataframe
 
-    return outcsv
+    def _process_csv_files(self):
+        """Method that allows the processing of CSV files"""
+        logging.info(f"Processing {self.transaction} as CSV files.")
 
+        # Getting the function
+        function_for_file = files_definitions[self.transaction]["function"]
 
-def process_xlsx_folder(msg: str, conn_string: str, container: str, subdir: str) -> str:
-    """Function to process excel folder data and create a dataframe"""
+        dataframe = pd.DataFrame()
 
-    logging.info(LOGS.process_xlsx_folder.format(msg=msg))
+        for file in self.files:
+            blob_content = self.blob_container_client.get_blob_client(blob=file).download_blob().content_as_bytes()
+            df = pd.read_csv(io.BytesIO(blob_content), encoding="cp1252", dtype=str)
+            df = self._simplify_columns(df)
+            df = function_for_file(df)
 
-    # Get data from blob storage
-    blobs_ls = ContainerClient.from_connection_string(conn_str=conn_string, container_name=container).list_blobs(name_starts_with=subdir)
-    final_df = pd.DataFrame()
-    for i, blob in enumerate(blobs_ls):
-        blob = BlobClient.from_connection_string(conn_str=conn_string, container_name=container, blob_name=blob.name)
-        df = pd.read_excel(blob.download_blob().content_as_bytes(), dtype=str)
-        if i==0:
-            cols = df.columns
-        else:
-            df.columns = cols
-        final_df = pd.concat([final_df, df])
+            dataframe = pd.concat([dataframe, df])
     
-    final_df = functions[msg](final_df)
+        return dataframe
 
-    outcsv = final_df.to_csv(index=False, encoding='utf-8')
+    @staticmethod
+    def _simplify_columns(df: pd.DataFrame) -> pd.DataFrame:
+        # Columns uniformization
+        df.columns = [col.lower().strip() for col in df.columns]
+        return df
 
-    return outcsv
+        
+
+

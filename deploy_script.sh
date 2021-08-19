@@ -1,4 +1,8 @@
 #!/bin/bash
+# Deployment script for DataConvert Queue Trigger function.
+# 
+# It allows to process all of the data before uploading into
+# Azure Data Lake Storage Account
 
 az functionapp create \
     --consumption-plan-location $LOCATION \
@@ -8,6 +12,8 @@ az functionapp create \
     --name $FUNCTIONAPP_NAME \
     --storage-account $STORAGE_ACCOUNT \
     --os-type linux
+
+sleep 10s
 
 func azure functionapp publish $FUNCTIONAPP_NAME
 

@@ -1,15 +1,14 @@
 {
   "version": "2.0",
   "logging": {
-    "applicationInsights": {
-      "samplingSettings": {
-        "isEnabled": true,
-        "excludedTypes": "Request"
-      }
+    "logLevel": {
+      "Function.DataConvert": "Warning",
+      "Function.DataConvert.User": "Information"
     }
   },
   "extensionBundle": {
     "id": "Microsoft.Azure.Functions.ExtensionBundle",
     "version": "[1.*, 2.0.0)"
-  }
+  },
+  "functions": ["DataConvert"]
 }
