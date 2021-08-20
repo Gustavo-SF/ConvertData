@@ -20,6 +20,7 @@ project.lock.json
 .secrets
 appsettings.json
 azcopy
+local.settings.json
 
 # raw-data
 data/*
