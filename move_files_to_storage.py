@@ -26,7 +26,7 @@ if __name__ == "__main__":
     for file in files:
         blob = container_client.get_blob_client(blob=str(file))
         with open(data_path / file, "rb") as data:
-            blob.upload_blob(data)
+            blob.upload_blob(data, overwrite=True)
         print(f"[PPP] Uploaded {file} into {container}.")
 
     if container == "maintenance":
