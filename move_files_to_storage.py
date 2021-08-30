@@ -38,7 +38,6 @@ if __name__ == "__main__":
             copied_blob = blob_service_client.get_blob_client("deployment", str(file))
             copied_blob.start_copy_from_url(source_blob)
 
-            # If you would like to delete the source file
-            remove_blob = blob_service_client.get_blob_client("maintenance", str(file))
-            remove_blob.remove_blob()
-            print(f"[PPP] Moved {file} to deployment container")
+            print(f"[PPP] Copied {file} to deployment container")
+
+# Files need to be removed from maintenance and data-ready as well.

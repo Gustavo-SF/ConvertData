@@ -4,6 +4,14 @@
 
 # We need a virtual environment with requirements installed
 source .venv/bin/activate
+# Before uploading we need the right connection string
+con_string=$(az storage account show-connection-string -n $STORAGE_ACCOUNT -o tsv)
+# prepare con_string code to be read by sed function
+con_string=$(echo $con_string | sed 's/&/\\\&/g;s/\//\\\//g')
+
+# We put the secret connection string into settings
+sed "s/CONNECTION_STRING/${con_string}/" local.settings.json -i
+
 python move_files_to_storage.py maintenance
 
 echo "[PPP] Upload terminated for storage account"
@@ -12,6 +20,8 @@ func azure functionapp publish $FUNCTIONAPP_NAME
 
 # ensure the function has propagated
 sleep 5s
+
+echo "[PPP] Starting maintenance transformations"
 
 # post message
 body=`echo -n "maintenance" | base64`
