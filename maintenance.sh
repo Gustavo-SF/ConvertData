@@ -16,11 +16,6 @@ python move_files_to_storage.py maintenance
 
 echo "[PPP] Upload terminated for storage account"
 
-func azure functionapp publish $FUNCTIONAPP_NAME
-
-# ensure the function has propagated
-sleep 5s
-
 echo "[PPP] Starting maintenance transformations"
 
 # post message
@@ -35,4 +30,4 @@ az storage message put \
     --output none
 
 # Requests to storage take a lot of time
-sleep 60m
+sleep 10m
