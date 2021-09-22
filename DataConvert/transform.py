@@ -131,6 +131,7 @@ def prepare_mcba(df):
     df = df[final_cols]
     df = df[df["material"].notna()]
     df["stor. loc."] = df["stor. loc."].astype(str).apply(lambda x: x.split(".0")[0])
+    df["stor. loc."] = df["stor. loc."].apply(lambda x: None if x=="nan" else x)
     df["plant"] = df["plant"].astype(str).apply(lambda x: x.split(".0")[0])
     df["month"] = prepare_month_column(df["month"])
     df.loc[df["material"].isna(), "material"] = ""
